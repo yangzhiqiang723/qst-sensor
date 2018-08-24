@@ -652,7 +652,7 @@ int QMA6981_setup_eint(struct i2c_client *client)
 	obj->irq = gpio_to_irq(QMAX981_IRQ_NUMBER);
 	// err = request_irq(obj->irq, QMA6981_eint_handler, IRQF_TRIGGER_RISING |IRQF_NO_SUSPEND, "gsensor_irq_pin", NULL);
 	err = request_irq(obj->irq, QMA6981_eint_handler, IRQF_TRIGGER_HIGH|IRQF_NO_SUSPEND, "gsensor_irq_pin", NULL);
-	enable_irq_wake(obj->irq);
+	//enable_irq_wake(obj->irq);
 
 	QMA6981_setup_eint_ok = 1;
 
