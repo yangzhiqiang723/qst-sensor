@@ -322,7 +322,7 @@ int OriSensor::readEvents(sensors_event_t* data, int count)
 			ALOGD("QMCX983  time = %lld\n", time/1000/1000);	
 			if(mMaEnabled || mOrEnabled)
 			{
-				Mag_T[2] = Mag_T[2] - Mag_T[0]*OTP[0]*0.02f -Mag_T[1]*OTP[1]*0.02f;
+				mag_raw[2] = mag_raw[2] - mag_raw[0]*OTP[0]*0.02f -mag_raw[1]*OTP[1]*0.02f;
 				
 				qmcX983.dRawMag[0] = (cvt.sign[0]*mag_raw[cvt.map[0]]);
 				qmcX983.dRawMag[1] = (cvt.sign[1]*mag_raw[cvt.map[1]]);
