@@ -95,6 +95,12 @@
 #define QMA6981_ODR_16HZ			0x01
 #define QMA6981_ODR_HIGH			0x20
 
+#define QMA7981_ODR_250HZ			0xe2
+#define QMA7981_ODR_125HZ			0xe1  
+#define QMA7981_ODR_62HZ			0xe0   
+#define QMA7981_ODR_31HZ			0xe5   
+#define QMA7981_ODR_16HZ			0xe6
+
 /* Accelerometer Sensor Full Scale */
 #define QMAX981_RANGE_2G			0x01
 #define QMAX981_RANGE_4G			0x02

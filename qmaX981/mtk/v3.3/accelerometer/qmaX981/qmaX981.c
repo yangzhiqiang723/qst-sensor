@@ -90,6 +90,7 @@ typedef enum
 {
 	CHIP_TYPE_QMA6981 = 0,
 	CHIP_TYPE_QMA7981,
+	CHIP_TYPE_QMA6100,
 	CHIP_TYPE_UNDEFINE,
 
 	CHIP_TYPE_MAX
@@ -398,7 +399,7 @@ int qmaX981_TxData(char *txData, int length)
 }
 #endif
 
-static int qmaX981_write_reg(unsigned char reg, unsigned value)
+static int qmaX981_write_reg(unsigned char reg, unsigned char value)
 {
     unsigned char databuf[2];
 
@@ -424,8 +425,8 @@ static int qmaX981_set_mode(unsigned char enable)
     res = qmaX981_TxData(databuf,2);
     mdelay(2);
 
-	// for 7981 chip bug, delete later
-	if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
+	// for 7981
+	if((qmaX981->chip_type == CHIP_TYPE_QMA7981)||(qmaX981->chip_type == CHIP_TYPE_QMA6100))
 	{
 	    databuf[0] = 0x5f;
 	    databuf[1] = 0x80;
@@ -495,10 +496,14 @@ static int qmaX981_get_chip_id(void)
 		QMAX981_LOG("qma6981 find \n");
 		qmaX981->chip_type = CHIP_TYPE_QMA6981;
 	}
-	else if((qmaX981->chip_id>=0xe0) && (qmaX981->chip_id<=0xe9))
+	else if((qmaX981->chip_id>=0xe0) && (qmaX981->chip_id<=0xe7))
 	{
 		QMAX981_LOG("qma7981 find \n");
 		qmaX981->chip_type = CHIP_TYPE_QMA7981;
+	}	
+	else if(qmaX981->chip_id == 0xe8)
+	{
+		qmaX981->chip_type = CHIP_TYPE_QMA6100;
 	}
 	else
 	{
@@ -536,13 +541,22 @@ static int qmaX981_set_odr(int mdelay)
 
 		ret=qmaX981_TxData(databuf, 2);
 	}
-	else if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
+	else if((qmaX981->chip_type == CHIP_TYPE_QMA7981)||(qmaX981->chip_type == CHIP_TYPE_QMA6100))
 	{	
-		// for 7981 , fix BW 32.5Hz, set ODR later
-		
-		//databuf[0] = QMAX981_REG_BW_ODR;
-		//databuf[1] = 0x05;
-		//ret=qmaX981_TxData(databuf, 2);
+		if(mdelay <= 5)
+			databuf[1] = QMA7981_ODR_250HZ;
+		else if(mdelay <= 10)
+			databuf[1] = QMA7981_ODR_125HZ;
+		else if(mdelay <= 20)
+			databuf[1] = QMA7981_ODR_62HZ;
+		else if(mdelay <= 50)
+			databuf[1] = QMA7981_ODR_31HZ;
+		else if(mdelay <= 100)
+			databuf[1] = QMA7981_ODR_16HZ;
+		else
+			databuf[1] = QMA7981_ODR_16HZ;
+
+		ret=qmaX981_TxData(databuf, 2);
 	}
 	else
 	{
@@ -581,7 +595,7 @@ static int qmaX981_set_range(unsigned char range)
 			qmaX981->lsb_1g = 256;
 
 	}
-	else if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
+	else if((qmaX981->chip_type == CHIP_TYPE_QMA7981)||(qmaX981->chip_type == CHIP_TYPE_QMA6100))
 	{	
 		data[0] = QMAX981_REG_RANGE;
 		data[1] = range;
@@ -699,7 +713,7 @@ static int qmaX981_read_raw_xyz(int *data)
 
 	if(qmaX981->chip_type == CHIP_TYPE_QMA6981)
 		ret = qma6981_read_raw_xyz(data);
-	else if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
+	else if((qmaX981->chip_type == CHIP_TYPE_QMA7981)||(qmaX981->chip_type == CHIP_TYPE_QMA6100))
 		ret = qma7981_read_raw_xyz(data);
 	else
 		ret = -1;
@@ -818,7 +832,7 @@ static int qmaX981_read_fifo_acc(int *acc_data)
 	{
 		ret = qma6981_read_fifo_raw(raw_data);
 	}
-	else if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
+	else if((qmaX981->chip_type == CHIP_TYPE_QMA7981)||(qmaX981->chip_type == CHIP_TYPE_QMA6100))
 	{
 		ret = qma7981_read_fifo_raw(raw_data);
 	}
@@ -869,11 +883,15 @@ static int qmaX981_read_fifo(unsigned char is_raw)
 #if defined(QMAX981_FIFO_USE_INT)
 	wait_event_interruptible(qmcX981_wq1, (qmaX981->wq1_flag > 0));
 #endif
-	if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
-		fifo_depth = 16;
+	if(qmaX981->chip_type == CHIP_TYPE_QMA6100)
+		fifo_depth = 64;
 	else
 		fifo_depth = 32;
 
+// read int status
+	databuf[0] = QMAX981_INT_STAT1;
+	ret = qmaX981_RxData(databuf, 1);
+// read int status
 	databuf[0] = QMAX981_FIFO_STATE;
 	if((ret = qmaX981_RxData(databuf, 1)))
 	{
@@ -896,7 +914,7 @@ static int qmaX981_read_fifo(unsigned char is_raw)
 				{
 					ret = qma6981_read_fifo_raw(acc_data);
 				}
-				else if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
+				else if(qmaX981->chip_type == CHIP_TYPE_QMA6100)
 				{
 					ret = qma7981_read_fifo_raw(acc_data);
 				}
@@ -1203,6 +1221,8 @@ static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 			return sprintf(buf, "chipid:%02x qma6981\n", qmaX981->chip_id);
 		else if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
 			return sprintf(buf, "chipid:%02x qma7981\n", qmaX981->chip_id);
+		else if(qmaX981->chip_type == CHIP_TYPE_QMA6100)
+			return sprintf(buf, "chipid:%02x qma6100\n", qmaX981->chip_id);
 		else
 			return sprintf(buf, "chipid:%02x undefined!\n", qmaX981->chip_id);
 	}
@@ -1836,12 +1856,37 @@ static int qma7981_initialize(void)
    	return 0;
 }
 
+static int qma6100_initialize(void)
+{
+	qmaX981_write_reg(0x36, 0xb6);
+	mdelay(5);
+	qmaX981_write_reg(0x36, 0x00);
+	qmaX981_set_range(QMAX981_RANGE_4G);
+	qmaX981_write_reg(QMAX981_REG_BW_ODR, 0xe0);
+#if defined(QMAX981_FIFO_FUNC)
+	qmaX981_write_reg(0x31, 0x10);
+	qmaX981_write_reg(0x3e, 0x40);		// fifo mode
+	qmaX981_write_reg(0x17, 0x20);		// fifo full
+	qmaX981_write_reg(0x1a, 0x20);		// map to int1
+	qmaX981_write_reg(0x20, 0x05);		// int default low
+	qmaX981_write_reg(0x21, 0x01);		// int latch modes
+#endif
+	qmaX981_write_reg(QMAX981_REG_POWER_CTL, 0x80);
+	qmaX981_write_reg(0x5f, 0x80);
+	qmaX981_write_reg(0x5f, 0x00);
+	mdelay(5);
+
+	return 0;
+}
+
 static int qmaX981_initialize(void)
 {
 	if(qmaX981->chip_type == CHIP_TYPE_QMA6981)
 		return qma6981_initialize();
 	else if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
 		return qma7981_initialize();
+	else if(qmaX981->chip_type == CHIP_TYPE_QMA6100)
+		return qma6100_initialize();
 	else
 		return -1;
 }
