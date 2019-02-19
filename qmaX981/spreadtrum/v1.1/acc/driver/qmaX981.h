@@ -29,6 +29,12 @@ struct QMAX981_acc_platform_data {
 #define QMA6981_RANGE_4G   0x02		//+-4g	7.8mg/LSB
 #define QMA6981_RANGE_8G  0x04		//+-8g	15.6ms/LSB
 
+#define QMAX981_RANGE_2G			0x01
+#define QMAX981_RANGE_4G			0x02
+#define QMAX981_RANGE_8G			0x04
+#define QMAX981_RANGE_16G			0x08
+#define QMAX981_RANGE_32G			0x0f
+
 #define QMA6981_XOUTL			0x01	// 4-bit output value X
 #define QMA6981_XOUTH			0x02	// 6-bit output value X
 #define QMA6981_YOUTL			0x03	
@@ -79,8 +85,11 @@ struct QMAX981_acc_platform_data {
 #define ABSMAX_1_5G				    (128)
 #define QMAX981_IRQ_NUMBER  139
 
-//#define QMAX981_STEP_COUNTER 1
-//#define QMA6981_STEP_COUNTER_USE_INT
+#define QMAX981_STEP_COUNTER
+#if defined(QMAX981_STEP_COUNTER)
+#define QMA6981_STEP_COUNTER_USE_INT
+#define QMA6981_CHECK_ABNORMAL_DATA
+#endif
    
 #define QMAX981_ACC_IOCTL_BASE 				77 //0x1D
 #define QMAX981_ACC_IOCTL_SET_DELAY		_IOW(QMAX981_ACC_IOCTL_BASE,0,int)
@@ -92,6 +101,7 @@ struct QMAX981_acc_platform_data {
 #ifdef QMAX981_STEP_COUNTER
 #define QMAX981_ACC_IOCTL_SET_STEPCOUNT_ENABLE		_IOW(QMAX981_ACC_IOCTL_BASE,5,int)
 #define QMAX981_ACC_IOCTL_GET_STEPCOUNT_ENABLE		_IOR(QMAX981_ACC_IOCTL_BASE,6,int)
+#define QMAX981_ACC_IOCTL_CLEAR_STEPCOUNT		_IOR(QMAX981_ACC_IOCTL_BASE,7,int)
 #endif
 
 #endif

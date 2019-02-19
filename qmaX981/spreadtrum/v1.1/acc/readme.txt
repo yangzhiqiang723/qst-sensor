@@ -44,3 +44,12 @@
 	qst,poll_report = <1>;
 	
 	};
+	
+5. file_texts  
+
+/dev/qmax981         u:object_r:sensors_device:s0
+
+
+6. ueventd.common.rc
+
+/dev/qmax981         0660     system     input
