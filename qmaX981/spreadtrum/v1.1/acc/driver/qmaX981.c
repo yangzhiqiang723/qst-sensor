@@ -1132,7 +1132,7 @@ int qmaX981_check_abnormal_data(int data_in, int *data_out)
 		//	||(QMA6981_ABS(g_qmaX981_data_c.more_data[2]-g_qmaX981_data_c.curr_data) > 1)
 		//	)
 		if((g_qmaX981_data_c.more_data[0]==g_qmaX981_data_c.more_data[1])
-			||(g_qmaX981_data_c.more_data[1]==g_qmaX981_data_c.more_data[2]))
+			&&(g_qmaX981_data_c.more_data[1]==g_qmaX981_data_c.more_data[2]))
 		{		
 			*data_out = g_qmaX981_data_c.more_data[0];
 			g_qmaX981_data_c.last_data = g_qmaX981_data_c.more_data[0];
