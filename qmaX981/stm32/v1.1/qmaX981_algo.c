@@ -24,10 +24,10 @@
 //#define QMAX981_ALGO_DEBUG
 #ifdef QMAX981_ALGO_DEBUG
 #define QMAX981_TAG                  "[QMAX981_algo] "
-#define QMAX981_ERR(fmt, args...)    printf(QMAX981_TAG "%s %d : " fmt, __FUNCTION__, __LINE__, ##args)
-#define QMAX981_FUN(f)               printf(QMAX981_TAG "%s\n", __FUNCTION__)
+#define QMAX981_ERR(fmt, args...)    console_write(QMAX981_TAG "%s %d : " fmt, __FUNCTION__, __LINE__, ##args)
+#define QMAX981_FUN(f)               console_write(QMAX981_TAG "%s\n", __FUNCTION__)
 //#define QMAX981_LOG(fmt, args...)    pr_debug(QMAX981_TAG "%s %d : " fmt, __FUNCTION__, __LINE__, ##args)
-#define QMAX981_LOG(fmt, args...)    printf(QMAX981_TAG "%s %d : " fmt, __FUNCTION__, __LINE__, ##args)
+#define QMAX981_LOG(fmt, args...)    console_write(QMAX981_TAG "%s %d : " fmt, __FUNCTION__, __LINE__, ##args)
 #else
 #define QMAX981_ERR(fmt, args...)    do {} while (0)
 #define QMAX981_FUN(f)               do {} while (0)
