@@ -208,7 +208,6 @@ static struct i2c_client *this_client = NULL;
 #define QMAX981_SC_INPUT_NAME		"step_counter"
 #endif
 
-static unsigned char qmaX981_current_placement = 0; // current soldered placement
 #define DEBUG
 #ifdef DEBUG
 #define LOG_TAG				        "[QMA-Gsensor] "
@@ -307,6 +306,7 @@ static int qmaX981_write_reg(unsigned char reg, unsigned char value)
 		return 0;
 	}
 }
+
 
 static int qmaX981_read_chip_id(struct i2c_client *client)
 {	
@@ -474,13 +474,16 @@ static int qmaX981_clear_stepcount(struct i2c_client *client)
 {
 	int rc = 0;
 	unsigned char data = 0;
+	unsigned char data_back = 0;
 
+	rc = qmaX981_smbus_read_byte(client, 0x13, &data_back);
 	data = 0x80;
-	
 	rc = qmaX981_smbus_write_byte(client,0x13,&data);
 #ifdef QMA6981_STEP_COUNTER_USE_INT
 	memset(&step_count_index, 0, sizeof(step_count_index));
 #endif
+	rc = qmaX981_smbus_write_byte(client,0x13,&data_back);
+
 	return 0;
 }
 #endif
@@ -1549,11 +1552,12 @@ static ssize_t show_sc_power_value(struct device *dev,
 {
 	unsigned char databuf=0;
 	int ret =0;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
-	ret = qmaX981_smbus_read_byte(qmaX981->client, 0x11, &databuf);
-	return sprintf(buf, "Stepcounter power status 0x%2x\n", databuf);
-
+	ret = qmaX981_smbus_read_byte(g_qmaX981->client, 0x11, &databuf);
+	if(ret)
+		return sprintf(buf, "show_sc_power_value error\n");
+	else
+		return sprintf(buf, "Stepcounter power status 0x%2x\n", databuf);
 }
 
 static ssize_t store_sc_power_value(struct device *dev,
@@ -1562,13 +1566,11 @@ static ssize_t store_sc_power_value(struct device *dev,
 {
 	int value = 0,ret;
 	unsigned char data;
-	//unsigned char data[2] = {0};
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
 	if(1 == sscanf(buf, "%x", &value))
 	{
 		data = (unsigned char)value;
-		ret = qmaX981_smbus_write_byte(qmaX981->client,0x11,&data);
+		ret = qmaX981_smbus_write_byte(g_qmaX981->client,0x11,&data);
 	}
 	else
 	{
@@ -1584,12 +1586,12 @@ static ssize_t show_sc_count_value(struct device *dev,
 	unsigned char databuf=0;
 	int ret =0;
 
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
+	ret = qmaX981_smbus_read_byte(g_qmaX981->client, 0x12, &databuf);
 
-	ret = qmaX981_smbus_read_byte(qmaX981->client, 0x12, &databuf);
-
-	return sprintf(buf, "Stepcounter sample count 0x%2x\n", databuf);
-
+	if(ret)
+		return sprintf(buf, "show_sc_count_value error\n");
+	else
+		return sprintf(buf, "Stepcounter sample count 0x%2x\n", databuf);
 }
 
 static ssize_t store_sc_count_value(struct device *dev,
@@ -1598,12 +1600,13 @@ static ssize_t store_sc_count_value(struct device *dev,
 {
 	int value = 0,ret;
 	unsigned char data;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
 	if(1 == sscanf(buf, "%x", &value))
 	{
 		data = (unsigned char)value;
-		ret = qmaX981_smbus_write_byte(qmaX981->client,0x12,&data);
+		ret = qmaX981_smbus_write_byte(g_qmaX981->client,0x12,&data);
+		if(ret)
+			GSE_ERR("store_sc_count_value error!\n");
 	}
 	else
 	{
@@ -1618,11 +1621,12 @@ static ssize_t show_sc_recision_value(struct device *dev,
 {
 	unsigned char databuf=0;
 	int ret =0;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
-	ret = qmaX981_smbus_read_byte(qmaX981->client, 0x13, &databuf);
-	return sprintf(buf, "Stepcounter precision 0x%2x\n", databuf);
-
+	ret = qmaX981_smbus_read_byte(g_qmaX981->client, 0x13, &databuf);
+	if(ret)
+		return sprintf(buf, "show_sc_recision_value error\n");
+	else
+		return sprintf(buf, "Stepcounter precision 0x%2x\n", databuf);
 }
 
 static ssize_t store_sc_recision_value(struct device *dev,
@@ -1631,12 +1635,11 @@ static ssize_t store_sc_recision_value(struct device *dev,
 {
 	int value = 0,ret;
 	unsigned char data;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
 	if(1 == sscanf(buf, "%x", &value))
 	{
 		data = (unsigned char)value;
-		ret = qmaX981_smbus_write_byte(qmaX981->client,0x13,&data);
+		ret = qmaX981_smbus_write_byte(g_qmaX981->client,0x13,&data);
 	}
 	else
 	{
@@ -1652,12 +1655,12 @@ static ssize_t show_sc_timelow_value(struct device *dev,
 	unsigned char databuf=0;
 	int ret =0;
 
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
+	ret = qmaX981_smbus_read_byte(g_qmaX981->client, 0x14, &databuf);
 
-	ret = qmaX981_smbus_read_byte(qmaX981->client, 0x14, &databuf);
-
-	return sprintf(buf, "Stepcounter time low 0x%2x\n", databuf);
-
+	if(ret)
+		return sprintf(buf, "show_sc_timelow_value error\n");
+	else
+		return sprintf(buf, "Stepcounter time low 0x%2x\n", databuf);
 }
 
 static ssize_t store_sc_timelow_value(struct device *dev,
@@ -1666,12 +1669,11 @@ static ssize_t store_sc_timelow_value(struct device *dev,
 {
 	int value = 0,ret;
 	unsigned char data;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
 	if(1 == sscanf(buf, "%x", &value))
 	{
 		data = (unsigned char)value;
-		ret = qmaX981_smbus_write_byte(qmaX981->client,0x14,&data);
+		ret = qmaX981_smbus_write_byte(g_qmaX981->client,0x14,&data);
 	}
 	else
 	{
@@ -1688,12 +1690,12 @@ static ssize_t show_sc_timeup_value(struct device *dev,
 	unsigned char databuf=0;
 	int ret =0;
 
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
+	ret = qmaX981_smbus_read_byte(g_qmaX981->client, 0x15, &databuf);
 
-	ret = qmaX981_smbus_read_byte(qmaX981->client, 0x15, &databuf);
-
-	return sprintf(buf, "Stepcounter time up 0x%2x\n", databuf);
-
+	if(ret)
+		return sprintf(buf, "show_sc_timeup_value error\n");
+	else
+		return sprintf(buf, "Stepcounter time up 0x%2x\n", databuf);
 }
 
 static ssize_t store_sc_timeup_value(struct device *dev,
@@ -1702,12 +1704,11 @@ static ssize_t store_sc_timeup_value(struct device *dev,
 {
 	int value = 0,ret;
 	unsigned char data;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
 	if(1 == sscanf(buf, "%x", &value))
 	{
 		data = (unsigned char)value;
-		ret = qmaX981_smbus_write_byte(qmaX981->client,0x15,&data);
+		ret = qmaX981_smbus_write_byte(g_qmaX981->client,0x15,&data);
 	}
 	else
 	{
@@ -1724,11 +1725,12 @@ static ssize_t show_sc_axis_value(struct device *dev,
 	unsigned char databuf = 0;
 	int ret=0;
 
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
+	ret = qmaX981_smbus_read_byte(g_qmaX981->client, 0x32, &databuf);
 
-	ret = qmaX981_smbus_read_byte(qmaX981->client, 0x32, &databuf);
-
-	return sprintf(buf, "Stepcounter saxis is 0x%2x\n", databuf);
+	if(ret)
+		return sprintf(buf, "show_sc_axis_value error\n");
+	else
+		return sprintf(buf, "Stepcounter saxis is 0x%2x\n", databuf);
 }
 
 
@@ -1737,13 +1739,12 @@ static ssize_t store_sc_axis_value(struct device *dev,
 		const char *buf, size_t count)
 {
 	int value = 0,ret;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 	unsigned char data=0;
 	
 	if(1 == sscanf(buf, "%x", &value))
 	{
 		data = (unsigned char)value;
-		ret = qmaX981_smbus_write_byte(qmaX981->client,0x32,&data);
+		ret = qmaX981_smbus_write_byte(g_qmaX981->client,0x32,&data);
 	}
 	else
 	{
@@ -1766,19 +1767,19 @@ static ssize_t qmaX981_clear_stepcount_store(struct device *dev,
 		struct device_attribute *attr,
 		const char *buf, size_t count)
 {
-	unsigned long data = 0;
+	int value = 0;
 	int error = 0;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
 	GSE_FUN();
-#ifdef QMA6981_STEP_COUNTER_USE_INT
-	memset(&step_count_index, 0, sizeof(step_count_index));
-#endif 
-	error = strict_strtoul(buf, 10, &data);
-	if(error)
-		return error;
-	if (qmaX981_clear_stepcount(qmaX981->client)< 0)
-		return -EINVAL;
+
+	if(1 == sscanf(buf, "%x", &value))
+	{
+		error = qmaX981_clear_stepcount(g_qmaX981->client);
+	}
+	else
+	{
+		GSE_ERR("invalid format = '%s'\n", buf);
+	}
 
 	return count;
 }
@@ -1786,10 +1787,7 @@ static ssize_t qmaX981_clear_stepcount_store(struct device *dev,
 static ssize_t show_sc_interrupt_num(struct device *dev,
 		struct device_attribute *attr, char *buf){
 	
-	char strbuf[256];		
-
-	//interrupt[0] = cnt_step_start;
-	//interrupt[1] = cnt_step_end;
+	char strbuf[256];
 
 	sprintf(strbuf, "%d,%d,%d", atomic_read(&cnt_step_start),atomic_read(&cnt_step_end),atomic_read(&status_level));
 
@@ -1836,19 +1834,15 @@ static ssize_t show_init_acc_value(struct device *dev, struct device_attribute *
 
 static ssize_t show_chipinfo_value(struct device *dev,
 		struct device_attribute *attr, char *buf){
-	unsigned char databuf=0;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 
-	qmaX981_smbus_read_byte(qmaX981->client, QMA6981_CHIP_ID, &databuf);
-
-	if(qmaX981->chip_type == CHIP_TYPE_QMA6981)
+	if(g_qmaX981->chip_type == CHIP_TYPE_QMA6981)
 		return sprintf(buf, "qma6981\n");
-	else if(qmaX981->chip_type == CHIP_TYPE_QMA7981)
+	else if(g_qmaX981->chip_type == CHIP_TYPE_QMA7981)
 		return sprintf(buf, "qma7981\n");
-	else if(qmaX981->chip_type == CHIP_TYPE_QMA6100)
+	else if(g_qmaX981->chip_type == CHIP_TYPE_QMA6100)
 		return sprintf(buf, "qma6100\n");
 	else
-		return sprintf(buf, "unknow!\n");		
+		return sprintf(buf, "unknow!\n");
 }
 
 static ssize_t show_waferid_value(struct device *dev,
@@ -1891,8 +1885,6 @@ static ssize_t show_waferid_value(struct device *dev,
 static ssize_t show_sensordata_value(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	//struct i2c_client *client = to_i2c_client(dev);
-	//struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
 	struct qmaX981_acc acc;
 	
 	qmaX981_read_accel_xyz(&acc);
@@ -1905,49 +1897,55 @@ static ssize_t show_dumpallreg_value(struct device *dev,
 {
 	int res;
 	int i =0;
-	char strbuf[1024];
+	char strbuf[600];
 	char tempstrbuf[24];
 	unsigned char databuf[2]={0};
 	int length=0;
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
-	GSE_FUN();
 
+	GSE_FUN();
 	/* Check status register for data availability */
-	for(i =0;i<64;i++)
+	for(i =0;i<=50;i++)
 	{
 		databuf[0] = i;
-		res = qmaX981_smbus_read_byte(qmaX981->client, databuf[0], &databuf[1]);
+		res = qmaX981_smbus_read_byte(g_qmaX981->client, databuf[0], &databuf[1]);
 		if(res < 0)
 			GSE_LOG("qma6981 dump registers 0x%02x failed !\n", i);
 
-		length = scnprintf(tempstrbuf, sizeof(tempstrbuf), "reg[0x%2x] =  0x%2x \n",i, databuf[1]);
-		snprintf(strbuf+length*i, sizeof(strbuf)-length*i, "%s \n",tempstrbuf);
+		length = scnprintf(tempstrbuf, sizeof(tempstrbuf), "0x%2x=0x%2x\n",i, databuf[1]);
+		snprintf(strbuf+length*i, sizeof(strbuf)-length*i, "%s",tempstrbuf);
 	}
 
 	return scnprintf(buf, sizeof(strbuf), "%s\n", strbuf);
 }
+
 /*----------------------------------------------------------------------------*/
 static ssize_t show_layout_value(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
-
 	GSE_FUN();
 
-	return sprintf(buf, "(%d %d)\n",atomic_read(&qmaX981->position),qmaX981_current_placement);
+	return sprintf(buf, "%d\n",atomic_read(&g_qmaX981->position));
 }
 
 static ssize_t store_layout_value(struct device *dev,
 				     struct device_attribute *attr,
 				     const char *buf, size_t count)
 {
-	unsigned int position = 0;
+	int position = 0;
 
 	GSE_FUN();
 
-	position = simple_strtoul(buf, NULL,10);
-	if ((position >= 0) && (position <= 7)) {
-		qmaX981_current_placement = position;
+	if(1 == sscanf(buf, "%d", &position))
+	{
+		if ((position >= 0) && (position <= 7))
+		{
+			atomic_set(&g_qmaX981->position, position);
+			qmaX981_set_layout(position);
+		}
+	}
+	else
+	{
+		GSE_ERR("invalid format = '%s'\n", buf);
 	}
 
 	return count;
@@ -1957,25 +1955,30 @@ static ssize_t store_layout_value(struct device *dev,
 static ssize_t qmaX981_enable_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
-
 	GSE_FUN();
 
-	return sprintf(buf, "%d\n", atomic_read(&qmaX981->enable));
+	return sprintf(buf, "%d\n", atomic_read(&g_qmaX981->enable));
 }
 
 static ssize_t qmaX981_enable_store(struct device *dev,
 		struct device_attribute *attr,
 		const char *buf, size_t count)
 {
-	unsigned int enable = simple_strtoul(buf, NULL, 10);
+	unsigned int enable=0;
 
 	GSE_FUN();
-
-	if (enable)
-		qmaX981_set_enable(&(this_client->dev), 1);
+	
+	if(1 == sscanf(buf, "%d", &enable))
+	{
+		if (enable)
+			qmaX981_set_enable(&(this_client->dev), 1);
+		else
+			qmaX981_set_enable(&(this_client->dev), 0);
+	}
 	else
-		qmaX981_set_enable(&(this_client->dev), 0);
+	{	
+		GSE_ERR("invalid format = '%s'\n", buf);
+	}
 
 	return count;
 }
@@ -1983,28 +1986,33 @@ static ssize_t qmaX981_enable_store(struct device *dev,
 static ssize_t qmaX981_delay_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
-
 	GSE_FUN();
 
-	return sprintf(buf, "%d\n", atomic_read(&qmaX981->delay));
+	return sprintf(buf, "%d\n", atomic_read(&g_qmaX981->delay));
 }
 
 static ssize_t qmaX981_delay_store(struct device *dev,
 		struct device_attribute *attr,
 		const char *buf, size_t count)
 {
-	//struct qmaX981_data *qmaX981 = i2c_get_clientdata(this_client);
-	unsigned long delay = simple_strtoul(buf, NULL, 10);
+	int delay=0;
 
 	GSE_FUN();
 
-	if (delay > QMAX981_MAX_DELAY)
-		delay = QMAX981_MAX_DELAY;
 	
-	//atomic_set(&qmaX981->delay, delay);
+	if(1 == sscanf(buf, "%d", &delay))
+	{
+		if(delay > QMAX981_MAX_DELAY)
+			delay = QMAX981_MAX_DELAY;
+		else if(delay <= 1)
+			delay = 0;
 
-	qmaX981_set_delay(&(this_client->dev),delay);
+		qmaX981_set_delay(&(this_client->dev),delay);
+	}
+	else
+	{
+		GSE_ERR("invalid format = '%s'\n", buf);
+	}
 	
 	return count;
 }
@@ -2197,29 +2205,29 @@ static ssize_t qma6981_cali_store(struct device *dev,
 
 /*----------------------------------------------------------------------------*/
 #ifdef QMAX981_STEP_COUNTER
-static DEVICE_ATTR(spower,      S_IRUGO | S_IWUSR, show_sc_power_value, store_sc_power_value);
-static DEVICE_ATTR(sspcount,      S_IRUGO | S_IWUSR, show_sc_count_value, store_sc_count_value);
-static DEVICE_ATTR(sprecision,      S_IRUGO | S_IWUSR, show_sc_recision_value, store_sc_recision_value);
-static DEVICE_ATTR(stimelow,      S_IRUGO | S_IWUSR, show_sc_timelow_value, store_sc_timelow_value);
-static DEVICE_ATTR(stimeup,      S_IRUGO | S_IWUSR, show_sc_timeup_value, store_sc_timeup_value);
-static DEVICE_ATTR(saxis,	S_IRUGO | S_IWUSR, show_sc_axis_value, store_sc_axis_value);
-static DEVICE_ATTR(sc_value,	S_IRUGO, qmaX981_sc_value_show , NULL);
-static DEVICE_ATTR(sc_cls,	S_IWUSR, NULL , qmaX981_clear_stepcount_store);
-static DEVICE_ATTR(sc_interrupt_num,	S_IRUGO, show_sc_interrupt_num , NULL);
-static DEVICE_ATTR(enable_sc,	S_IWUSR, NULL , qmaX981_enable_sc_store);
+static DEVICE_ATTR(spower,		QMAX981_ATTR_WR, show_sc_power_value, store_sc_power_value);
+static DEVICE_ATTR(sspcount,		QMAX981_ATTR_WR, show_sc_count_value, store_sc_count_value);
+static DEVICE_ATTR(sprecision,	QMAX981_ATTR_WR, show_sc_recision_value, store_sc_recision_value);
+static DEVICE_ATTR(stimelow,		QMAX981_ATTR_WR, show_sc_timelow_value, store_sc_timelow_value);
+static DEVICE_ATTR(stimeup,		QMAX981_ATTR_WR, show_sc_timeup_value, store_sc_timeup_value);
+static DEVICE_ATTR(saxis,			QMAX981_ATTR_WR, show_sc_axis_value, store_sc_axis_value);
+static DEVICE_ATTR(sc_value,		QMAX981_ATTR_R, qmaX981_sc_value_show , NULL);
+static DEVICE_ATTR(sc_cls,		QMAX981_ATTR_W, NULL , qmaX981_clear_stepcount_store);
+static DEVICE_ATTR(sc_interrupt_num,	QMAX981_ATTR_R, show_sc_interrupt_num , NULL);
+static DEVICE_ATTR(enable_sc,		QMAX981_ATTR_W, NULL , qmaX981_enable_sc_store);
 #endif 
 
-static DEVICE_ATTR(init_acc,	S_IRUGO, show_init_acc_value, NULL);
-static DEVICE_ATTR(chipinfo,	S_IRUGO, show_chipinfo_value, NULL);
-static DEVICE_ATTR(waferid,		S_IRUGO, show_waferid_value, NULL);
-static DEVICE_ATTR(sensordata,	S_IRUGO, show_sensordata_value,    NULL);
-static DEVICE_ATTR(dumpallreg,	S_IRUGO , show_dumpallreg_value, NULL);
-static DEVICE_ATTR(layout,	S_IRUGO | S_IWUSR, show_layout_value, store_layout_value);
-static DEVICE_ATTR(enable_acc,	 S_IRUGO | S_IWUSR , qmaX981_enable_show , qmaX981_enable_store);
-static DEVICE_ATTR(delay_acc,	 S_IRUGO | S_IWUSR , qmaX981_delay_show , qmaX981_delay_store);
-static DEVICE_ATTR(setreg,	 S_IRUGO | S_IWUSR , qmaX981_getreg , qmaX981_setreg);
+static DEVICE_ATTR(init_acc,		QMAX981_ATTR_R, show_init_acc_value, NULL);
+static DEVICE_ATTR(chipinfo,		QMAX981_ATTR_R, show_chipinfo_value, NULL);
+static DEVICE_ATTR(waferid,		QMAX981_ATTR_R, show_waferid_value, NULL);
+static DEVICE_ATTR(sensordata,	QMAX981_ATTR_R, show_sensordata_value,    NULL);
+static DEVICE_ATTR(dumpallreg,	QMAX981_ATTR_R, show_dumpallreg_value, NULL);
+static DEVICE_ATTR(layout,		QMAX981_ATTR_WR, show_layout_value, store_layout_value);
+static DEVICE_ATTR(enable_acc,	QMAX981_ATTR_WR, qmaX981_enable_show , qmaX981_enable_store);
+static DEVICE_ATTR(delay_acc,		QMAX981_ATTR_WR, qmaX981_delay_show , qmaX981_delay_store);
+static DEVICE_ATTR(setreg,		QMAX981_ATTR_WR, qmaX981_getreg , qmaX981_setreg);
 #if defined(QMA6981_USE_CALI)
-static DEVICE_ATTR(cali,	 S_IRUGO | S_IWUGO , qma6981_cali_show , qma6981_cali_store);
+static DEVICE_ATTR(cali,			QMAX981_ATTR_WR, qma6981_cali_show , qma6981_cali_store);
 #endif
 
 static struct attribute *qmaX981_attributes[] = {
@@ -2251,6 +2259,7 @@ static struct attribute *qmaX981_attributes[] = {
 };
 
 static struct attribute_group qmaX981_attribute_group = {
+	.name = "qmax981",
 	.attrs = qmaX981_attributes
 };
 
@@ -2517,8 +2526,8 @@ static int qmaX981_i2c_probe(struct i2c_client *client,
     wake_lock_init(&sc_wakelock,WAKE_LOCK_SUSPEND,"sc wakelock");
 #endif
 
-#if 1
 	g_qmaX981->chip_type = CHIP_TYPE_UNDEFINE;
+#if 1
 	err = qmaX981_read_chip_id(this_client);
 	if(err < 0) {
 		goto exit1;
