@@ -126,8 +126,8 @@
 		st,negate-y;
 	};
 
-	qma6981@12 {
-		compatible = "qst,qma6981";
+	qmaX981@12 {
+		compatible = "qst,qmaX981";
 		reg = <0x12>;
 		pinctrl-names = "default","sleep";
 		pinctrl-0 = <&qma6981_int_active>;
