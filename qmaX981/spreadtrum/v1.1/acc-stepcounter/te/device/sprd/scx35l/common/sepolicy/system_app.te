@@ -1,2 +1,0 @@
-
-allow system_app sys_input1_file:file rw_file_perms;
